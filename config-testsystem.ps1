@@ -1,14 +1,13 @@
-﻿# Config Win Server Testsystem
+﻿# Configure Win Server Testsystem
 # Author: @denniszeitler
-# Version: v.0.2
+# Version: v.0.3
 # Description: Setup a Test System on a Windows Server:
 # Components: - Powershell Modules
 #             - AD-DS Role
 #             - Domain Controller (with some Objects)
 #             - VS Code
 #             - Powershell Universal
-
-
+#
 # --- Do-Not-Change Variables --- #
 $repo = Get-PSRepository -Name 'PSGallery';
 # --- Start Module Installation --- #
@@ -43,6 +42,13 @@ if (-not (Get-Module -ListAvailable -Name PSWindowsUpdate)) {
     Install-Module -Name PSWindowsUpdate -Force;
 } else {
     Write-Host "PSWindowsUpdate Modul already installed.";
+}
+#
+if (-not (Get-Module -ListAvailable -Name Choco)) {
+    Write-Host "Installiere Choco Modul...";
+    Install-Module -Name Choco -Force;
+} else {
+    Write-Host "Choco Modul ist bereits installiert.";
 }
 #
 # --- END Module Installation --- #
@@ -112,6 +118,16 @@ else
     Write-LogInfo -LogPath $LogPath  -Message 'Domain Controller already installed' -TimeStamp;
 }
 #
+# DNS-Forwarding
+if(-not (Get-DnsServerForwarder))
+{
+    Write-LogInfo -LogPath $LogPath -Message "No DNS Forwarder found – adding Google & Cloudflare..." -TimeStamp;
+    Set-DnsServerForwarder -IPAddress 8.8.8.8,1.1.1.1 -PassThru;
+}
+else
+{
+    Write-LogInfo -LogPath $LogPath -Message "DNS Forwarder already configured." -TimeStamp;
+}
 #
 # Create OUs
 $DN = (Get-ADDomain).DistinguishedName;
@@ -143,3 +159,39 @@ If(-not($ServicesOU))
     #
     Write-LogInfo -LogPath $LogPath  -Message "Services OU + Test-Service created" -TimeStamp;
 }
+#
+# Software Installation
+$chocoCommand = get-command choco.exe -ErrorAction SilentlyContinue;
+
+if($null -eq $chocoCommand)
+{
+    Write-LogInfo -LogPath $LogPath -Message "Chocolatey not installed. Starting Installation." -TimeStamp;
+    Install-Choco;
+    Write-LogInfo -LogPath $LogPath -Message "Restarting System." -TimeStamp;
+    Restart-Computer;
+}
+else
+{
+    Write-LogInfo -LogPath $LogPath -Message "Chocolatey already installed." -TimeStamp;
+}
+#
+# Choco Packages
+$chocoPackages = @("microsoft-edge","vscode","powershelluniversal");
+
+ForEach($Package in $chocoPackages)
+{
+
+$packageInstalled = choco list --localonly | Select-String "^$Package ";
+    
+    if (-not $packageInstalled)
+    {
+        Write-LogInfo -LogPath $LogPath -Message "Package Installation: $Package" -TimeStamp;
+        choco install $Package -y;
+    }
+    else{
+        Write-LogInfo -LogPath $LogPath -Message "Package: $Package already installed." -TimeStamp;
+    }
+}
+
+#Start Powershell Universal in Edge
+Start-Process "msedge.exe" "http://localhost:5000/"
