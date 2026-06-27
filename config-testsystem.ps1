@@ -1,11 +1,24 @@
+# Version: v.0.3
+# Description: Setup a Test System on a Windows Server:
 # Components: - Powershell Modules
-#             - AD-DS Role
+#             - AD DS Role
 #             - Domain Controller (with some Objects)
 #             - VS Code
 #             - Powershell Universal
 #
 # --- Do-Not-Change Variables --- #
 $repo = Get-PSRepository -Name 'PSGallery';
+#
+# --- Add Task --- #
+wevtutil set-log Microsoft-Windows-TaskScheduler/Operational /enabled:true
+$Taskname = 'Config-Testsystem';
+$action =  New-ScheduledTaskAction -Execute "C:\Windows\System32\WindowsPowershell\v1.0\powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File 'C:\Configure-Testsystem\configure-testsystem.ps1'"
+$trigger = New-ScheduledTaskTrigger -AtLogOn
+#$Principal = New-ScheduledTaskPrincipal
+if(-not(Get-scheduledTask  -TaskName $Taskname -ErrorAction SilentlyContinue)){
+    Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger
+}
+#
 # --- Start Module Installation --- #
 #
 if(-not(Get-Module -Name PackageManagement -ErrorAction SilentlyContinue))
@@ -17,12 +30,9 @@ if(-not(Get-Module -Name PackageManagement -ErrorAction SilentlyContinue))
     Write-Host "NuGet-PackageProvider already installed";
 }
 #
-if(-not(Get-PackageProvider -Name Nuget -ErrorAction SilentlyContinue))
-{
-    Write-Host "Starting NuGet-PackageProvider Installation...";
-    Install-PackageProvider Nuget -Force -Confirm:$false;
-}else
-{
+try{
+    Get-PackageProvider -Name Nuget -ErrorAction SilentlyContinue -Force
+}catch{
     Write-Host "NuGet-PackageProvider already installed";
 }
 #
@@ -120,6 +130,9 @@ Install-ADDSForest `
     -Force
 Write-LogInfo -LogPath $LogPath  -Message 'Domain Controller Installation finished' -TimeStamp;
 Write-LogInfo -LogPath $LogPath  -Message "Exit Script: Reboot required." -TimeStamp;
+Set-ScheduledTask -TaskName $TaskName -User 'DC01\Administrator'
+Restart-Computer;
+#Hier eigentlich neuer Task, da wir dann DC01/Administrator sind..
 }
 else
 {
@@ -199,6 +212,12 @@ $packageInstalled = choco list --localonly | Select-String "^$Package ";
     else{
         Write-LogInfo -LogPath $LogPath -Message "Package: $Package already installed." -TimeStamp;
     }
+}
+
+try{
+    Unregister-Scheduledtask -TaskName $Taskname
+}catch{
+
 }
 
 #Start Powershell Universal in Edge
