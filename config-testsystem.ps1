@@ -1,5 +1,3 @@
-﻿# Configure Win Server Testsystem
-# Author: @denniszeitler
 # Version: v.0.3
 # Description: Setup a Test System on a Windows Server:
 # Components: - Powershell Modules
@@ -12,10 +10,10 @@
 $repo = Get-PSRepository -Name 'PSGallery';
 # --- Start Module Installation --- #
 #
-if(-not(Get-PackageProvider -Name NuGet -ErrorAction SilentlyContinue))
+if(-not(Get-Module -Name PackageManagement -ErrorAction SilentlyContinue))
 {
     Write-Host "Starting NuGet-PackageProvider Installation...";
-    Install-PackageProvider NuGet -Force -Confirm:$true;
+    Install-PackageProvider NuGet -Force -Confirm:$false;
 }else
 {
     Write-Host "NuGet-PackageProvider already installed";
@@ -32,21 +30,21 @@ if($repo.InstallPolicy -ne 'Trusted')
 #
 if (-not (Get-Module -ListAvailable -Name PSLogging)) {
     Write-Host "Starting Installation: PSLogging Modul...";
-    Install-Module -Name PSLogging -Force -Confirm:$true;
+    Install-Module -Name PSLogging -Force -Confirm:$false;
 } else {
     Write-Host "PSLogging Modul already installed.";
 }
 #
 if (-not (Get-Module -ListAvailable -Name PSWindowsUpdate)) {
     Write-Host "Starting Installation: PSWindowsUpdate Modul...";
-    Install-Module -Name PSWindowsUpdate -Force -Confirm:$true;
+    Install-Module -Name PSWindowsUpdate -Force -Confirm:$false;
 } else {
     Write-Host "PSWindowsUpdate Modul already installed.";
 }
 #
 if (-not (Get-Module -ListAvailable -Name Choco)) {
     Write-Host "Installiere Choco Modul...";
-    Install-Module -Name Choco -Force -Confirm:$true;
+    Install-Module -Name Choco -Force -Confirm:$false;
 } else {
     Write-Host "Choco Modul ist bereits installiert.";
 }
@@ -92,7 +90,7 @@ if($WindowsUpdates){
 Write-LogInfo -LogPath $LogPath  -Message 'Windows Update Installaltion finished' -TimeStamp;
 #
 #
-if(-not(Get-WindowsFeature -Name 'AD-Domain-Services'))
+if(-not((Get-WindowsFeature -Name 'AD-Domain-Services').'Install State' -like 'Installed'))
 {
 Write-LogInfo -LogPath $LogPath  -Message 'Starting AD-DS Role Installation...' -TimeStamp;
 Install-WindowsFeature -Name AD-Domain-Services -IncludeManagementTools;
