@@ -1,5 +1,3 @@
-# Version: v.0.3
-# Description: Setup a Test System on a Windows Server:
 # Components: - Powershell Modules
 #             - AD-DS Role
 #             - Domain Controller (with some Objects)
@@ -12,8 +10,17 @@ $repo = Get-PSRepository -Name 'PSGallery';
 #
 if(-not(Get-Module -Name PackageManagement -ErrorAction SilentlyContinue))
 {
+    Write-Host "Starting PackageManagement Installation...";
+    Install-Module PackageManagement -Force -Confirm:$false;
+}else
+{
+    Write-Host "NuGet-PackageProvider already installed";
+}
+#
+if(-not(Get-PackageProvider -Name Nuget -ErrorAction SilentlyContinue))
+{
     Write-Host "Starting NuGet-PackageProvider Installation...";
-    Install-PackageProvider NuGet -Force -Confirm:$false;
+    Install-PackageProvider Nuget -Force -Confirm:$false;
 }else
 {
     Write-Host "NuGet-PackageProvider already installed";
