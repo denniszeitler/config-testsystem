@@ -15,7 +15,7 @@ $repo = Get-PSRepository -Name 'PSGallery';
 if(-not(Get-PackageProvider -Name NuGet -ErrorAction SilentlyContinue))
 {
     Write-Host "Starting NuGet-PackageProvider Installation...";
-    Install-PackageProvider NuGet -Force;
+    Install-PackageProvider NuGet -Force -Confirm:$true;
 }else
 {
     Write-Host "NuGet-PackageProvider already installed";
@@ -32,21 +32,21 @@ if($repo.InstallPolicy -ne 'Trusted')
 #
 if (-not (Get-Module -ListAvailable -Name PSLogging)) {
     Write-Host "Starting Installation: PSLogging Modul...";
-    Install-Module -Name PSLogging -Force;
+    Install-Module -Name PSLogging -Force -Confirm:$true;
 } else {
     Write-Host "PSLogging Modul already installed.";
 }
 #
 if (-not (Get-Module -ListAvailable -Name PSWindowsUpdate)) {
     Write-Host "Starting Installation: PSWindowsUpdate Modul...";
-    Install-Module -Name PSWindowsUpdate -Force;
+    Install-Module -Name PSWindowsUpdate -Force -Confirm:$true;
 } else {
     Write-Host "PSWindowsUpdate Modul already installed.";
 }
 #
 if (-not (Get-Module -ListAvailable -Name Choco)) {
     Write-Host "Installiere Choco Modul...";
-    Install-Module -Name Choco -Force;
+    Install-Module -Name Choco -Force -Confirm:$true;
 } else {
     Write-Host "Choco Modul ist bereits installiert.";
 }
@@ -85,7 +85,10 @@ If($env:Computername -notlike $Computername)
 # --- Windows Updates --- #
 # Note: Loop Get-WuInstall? 
 Write-LogInfo -LogPath $LogPath  -Message 'Starting Windows Update Installation...' -TimeStamp;
-Get-WUInstall -Install -AcceptAll -IgnoreReboot | Out-String | ForEach-Object{Write-LogInfo -LogPath $LogPath -Message $_};
+$WindowsUpdates = Get-WUInstall;
+if($WindowsUpdates){
+    Get-WUInstall -Install -AcceptAll -IgnoreReboot | Out-String | ForEach-Object{Write-LogInfo -LogPath $LogPath -Message $_};
+}
 Write-LogInfo -LogPath $LogPath  -Message 'Windows Update Installaltion finished' -TimeStamp;
 #
 #
